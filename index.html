@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Screenshot Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0a0a0f;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Header */
+        .header {
+            width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #1a1a2e;
+            background: #0d0d14;
+        }
+
+        .header .logo {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .header .tagline {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            width: 100%;
+            max-width: 1400px;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .main h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            background: linear-gradient(135deg, #e0e0e0, #a0a0a0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+        }
+
+        .main .subtitle {
+            color: #666;
+            text-align: center;
+            margin-top: -15px;
+            font-size: 0.95rem;
+        }
+
+        /* Two-column layout */
+        .terminals-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            width: 100%;
+        }
+
+        /* Each terminal section */
+        .terminal-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ccc;
+        }
+
+        .section-label .os-badge {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section-label .os-badge.mac-badge {
+            background: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .section-label .os-badge.win-badge {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        /* Controls Bar */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+            padding: 12px 16px;
+            background: #111119;
+            border-radius: 10px;
+            border: 1px solid #1e1e30;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .control-group label {
+            color: #888;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-group select,
+        .control-group input[type="number"],
+        .control-group input[type="text"] {
+            background: #1a1a28;
+            border: 1px solid #2a2a40;
+            color: #e0e0e0;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .control-group select:focus,
+        .control-group input:focus {
+            border-color: #6366f1;
+        }
+
+        .control-group input[type="number"] {
+            width: 60px;
+        }
+
+        .control-group input[type="text"] {
+            width: 100%;
+            min-width: 120px;
+            flex: 1;
+        }
+
+        .divider {
+            width: 1px;
+            height: 24px;
+            background: #2a2a40;
+        }
+
+        /* Terminal Window */
+        .terminal-container {
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        /* macOS style title bar */
+        .terminal-titlebar {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: #2d2d2d;
+            position: relative;
+        }
+
+        .traffic-lights {
+            display: flex;
+            gap: 8px;
+        }
+
+        .traffic-lights .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .traffic-lights .dot.close { background: #ff5f57; }
+        .traffic-lights .dot.minimize { background: #ffbd2e; }
+        .traffic-lights .dot.maximize { background: #28c840; }
+
+        .terminal-titlebar .title-text {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #999;
+            font-size: 0.8rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Windows Terminal style */
+        .win-titlebar {
+            display: flex;
+            align-items: stretch;
+            background: #202020;
+            height: 36px;
+            position: relative;
+            user-select: none;
+        }
+
+        .win-tabs {
+            display: flex;
+            align-items: stretch;
+            flex: 1;
+            min-width: 0;
+            padding-top: 6px;
+            padding-left: 8px;
+            gap: 0;
+        }
+
+        .win-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
+            background: #2d2d2d;
+            border-radius: 6px 6px 0 0;
+            color: #ccc;
+            font-size: 0.78rem;
+            font-family: 'Segoe UI', 'Inter', sans-serif;
+            height: 100%;
+            max-width: 220px;
+            min-width: 0;
+        }
+
+        .win-tab .tab-icon {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
+        .win-tab .tab-icon svg {
+            width: 14px;
+            height: 14px;
+            fill: #ccc;
+        }
+
+        .win-tab .tab-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .win-tab .tab-close {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #888;
+            border-radius: 4px;
+            margin-left: 4px;
+        }
+
+        .win-tab-actions {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            padding: 0 8px;
+            padding-top: 6px;
+        }
+
+        .win-tab-btn {
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+
+        .win-controls {
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .win-ctrl-btn {
+            width: 46px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 0.7rem;
+        }
+
+        .win-ctrl-btn.win-close:hover {
+            background: #e81123;
+            color: #fff;
+        }
+
+        /* Terminal body */
+        .terminal-body {
+            background: #1e1e1e;
+            padding: 16px;
+            min-height: 300px;
+            position: relative;
+        }
+
+        .terminal-body textarea {
+            width: 100%;
+            min-height: 280px;
+            background: transparent;
+            border: none;
+            color: #d4d4d4;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+            white-space: pre;
+            overflow-wrap: normal;
+            overflow-x: auto;
+        }
+
+        .terminal-body textarea::placeholder {
+            color: #555;
+        }
+
+        /* For screenshot — hidden pre block */
+        .terminal-body .screenshot-text {
+            display: none;
+            color: #d4d4d4;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* Buttons */
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: #1a1a28;
+            color: #ccc;
+            border: 1px solid #2a2a40;
+        }
+
+        .btn-secondary:hover {
+            background: #222233;
+            border-color: #3a3a55;
+        }
+
+        /* Theme colors */
+        .terminal-body.theme-dark { background: #1e1e1e; }
+        .terminal-body.theme-dark textarea,
+        .terminal-body.theme-dark .screenshot-text { color: #d4d4d4; }
+
+        .terminal-body.theme-ubuntu { background: #300a24; }
+        .terminal-body.theme-ubuntu textarea,
+        .terminal-body.theme-ubuntu .screenshot-text { color: #eeeeec; }
+
+        .terminal-body.theme-solarized { background: #002b36; }
+        .terminal-body.theme-solarized textarea,
+        .terminal-body.theme-solarized .screenshot-text { color: #839496; }
+
+        .terminal-body.theme-monokai { background: #272822; }
+        .terminal-body.theme-monokai textarea,
+        .terminal-body.theme-monokai .screenshot-text { color: #f8f8f2; }
+
+        .terminal-body.theme-dracula { background: #282a36; }
+        .terminal-body.theme-dracula textarea,
+        .terminal-body.theme-dracula .screenshot-text { color: #f8f8f2; }
+
+        .terminal-body.theme-green { background: #0c0c0c; }
+        .terminal-body.theme-green textarea,
+        .terminal-body.theme-green .screenshot-text { color: #00ff41; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #1e1e30;
+            color: #fff;
+            padding: 14px 24px;
+            border-radius: 10px;
+            border: 1px solid #2a2a45;
+            font-size: 0.9rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Footer */
+        .footer {
+            width: 100%;
+            text-align: center;
+            padding: 20px;
+            color: #444;
+            font-size: 0.8rem;
+            border-top: 1px solid #1a1a2e;
+        }
+
+        /* Responsive: stack on mobile */
+        @media (max-width: 900px) {
+            .terminals-grid {
+                grid-template-columns: 1fr;
+            }
+            .main h1 { font-size: 1.4rem; }
+            .header { padding: 14px 16px; }
+            .main { padding: 24px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">⬛</div>
+            TermSnap
+        </div>
+        <div class="tagline">Fake terminal screenshot generator</div>
+    </div>
+
+    <div class="main">
+        <h1>Terminal Screenshot Generator</h1>
+        <p class="subtitle">Type anything in either terminal — then download the screenshot.</p>
+
+        <div class="terminals-grid">
+
+            <!-- ========== macOS Terminal ========== -->
+            <div class="terminal-section">
+                <div class="section-label">
+                    🍎 macOS Terminal
+                    <span class="os-badge mac-badge">zsh / bash</span>
+                </div>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Theme</label>
+                        <select id="macTheme" onchange="applyTheme('mac')">
+                            <option value="dark" selected>Dark</option>
+                            <option value="ubuntu">Ubuntu</option>
+                            <option value="solarized">Solarized</option>
+                            <option value="monokai">Monokai</option>
+                            <option value="dracula">Dracula</option>
+                            <option value="green">Hacker</option>
+                        </select>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="control-group">
+                        <label>Size</label>
+                        <input type="number" id="macFontSize" value="14" min="10" max="24" oninput="applyFontSize('mac')">
+                    </div>
+                    <div class="divider"></div>
+                    <div class="control-group" style="flex:1">
+                        <label>Title</label>
+                        <input type="text" id="macTitle" value="user@MacBook-Air — zsh" oninput="applyTitle('mac')">
+                    </div>
+                </div>
+
+                <div class="terminal-container" id="macContainer">
+                    <div class="terminal-titlebar" id="macTitlebar">
+                        <div class="traffic-lights">
+                            <div class="dot close"></div>
+                            <div class="dot minimize"></div>
+                            <div class="dot maximize"></div>
+                        </div>
+                        <span class="title-text" id="macTitleText">user@MacBook-Air — zsh</span>
+                    </div>
+                    <div class="terminal-body theme-dark" id="macBody">
+                        <textarea id="macInput" spellcheck="false" placeholder="user@MacBook-Air ~ % mkdir ~/jenkins-agent&#10;user@MacBook-Air ~ % cd ~/jenkins-agent&#10;user@MacBook-Air jenkins-agent % curl -O http://localhost:8080/...&#10;&#10;Type or paste your macOS terminal output here..."></textarea>
+                        <div class="screenshot-text" id="macScreenshotText"></div>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn btn-primary" onclick="downloadScreenshot('mac')">📸 Download</button>
+                    <button class="btn btn-secondary" onclick="copyToClipboard('mac')">📋 Copy</button>
+                    <button class="btn btn-secondary" onclick="clearTerminal('mac')">🗑️ Clear</button>
+                </div>
+            </div>
+
+            <!-- ========== Windows Terminal ========== -->
+            <div class="terminal-section">
+                <div class="section-label">
+                    🪟 Windows Terminal
+                    <span class="os-badge win-badge">CMD / PowerShell</span>
+                </div>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Theme</label>
+                        <select id="winTheme" onchange="applyTheme('win')">
+                            <option value="dark" selected>Dark</option>
+                            <option value="ubuntu">Ubuntu</option>
+                            <option value="solarized">Solarized</option>
+                            <option value="monokai">Monokai</option>
+                            <option value="dracula">Dracula</option>
+                            <option value="green">Hacker</option>
+                        </select>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="control-group">
+                        <label>Size</label>
+                        <input type="number" id="winFontSize" value="14" min="10" max="24" oninput="applyFontSize('win')">
+                    </div>
+                    <div class="divider"></div>
+                    <div class="control-group" style="flex:1">
+                        <label>Title</label>
+                        <input type="text" id="winTitle" value="Command Prompt" oninput="applyTitle('win')">
+                    </div>
+                </div>
+
+                <div class="terminal-container" id="winContainer">
+                    <div class="win-titlebar" id="winTitlebar">
+                        <div class="win-tabs">
+                            <div class="win-tab">
+                                <span class="tab-icon"><svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M2 3h12v10H2V3zm1 1v8h10V4H3zm1.5 2L6 4.5 7.5 6 6 7.5 4.5 6zm3.5 2h4v1H8V8z" fill="#ccc"/></svg></span>
+                                <span class="tab-title" id="winTitleText">Command Prompt</span>
+                                <span class="tab-close">✕</span>
+                            </div>
+                        </div>
+                        <div class="win-tab-actions">
+                            <span class="win-tab-btn">＋</span>
+                            <span class="win-tab-btn">˅</span>
+                        </div>
+                        <div class="win-controls">
+                            <div class="win-ctrl-btn">─</div>
+                            <div class="win-ctrl-btn">□</div>
+                            <div class="win-ctrl-btn win-close">✕</div>
+                        </div>
+                    </div>
+                    <div class="terminal-body theme-dark" id="winBody">
+                        <textarea id="winInput" spellcheck="false" placeholder="C:\Users\Student> java -jar agent.jar -url http://localhost:8080/&#10;INFO: Connected&#10;INFO: Agent successfully connected&#10;&#10;Type or paste your Windows terminal output here..."></textarea>
+                        <div class="screenshot-text" id="winScreenshotText"></div>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn btn-primary" onclick="downloadScreenshot('win')">📸 Download</button>
+                    <button class="btn btn-secondary" onclick="copyToClipboard('win')">📋 Copy</button>
+                    <button class="btn btn-secondary" onclick="clearTerminal('win')">🗑️ Clear</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="footer">
+        TermSnap — Made for students who need quick terminal screenshots.
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const titlebarColors = {
+            dark: '#2d2d2d', ubuntu: '#3c1130', solarized: '#073642',
+            monokai: '#1e1f1a', dracula: '#21222c', green: '#1a1a1a'
+        };
+
+        // Windows Terminal: outer bar is darker, tab is the theme color
+        const winBarColors = {
+            dark: '#202020', ubuntu: '#2a0619', solarized: '#04232c',
+            monokai: '#161712', dracula: '#191a22', green: '#0e0e0e'
+        };
+
+        function els(type) {
+            return {
+                container: document.getElementById(type + 'Container'),
+                body: document.getElementById(type + 'Body'),
+                input: document.getElementById(type + 'Input'),
+                screenshotText: document.getElementById(type + 'ScreenshotText'),
+                titleText: document.getElementById(type + 'TitleText'),
+                titlebar: document.getElementById(type + 'Titlebar'),
+                theme: document.getElementById(type + 'Theme'),
+                fontSize: document.getElementById(type + 'FontSize'),
+                title: document.getElementById(type + 'Title'),
+            };
+        }
+
+        function applyTheme(type) {
+            const e = els(type);
+            const theme = e.theme.value;
+            e.body.className = 'terminal-body theme-' + theme;
+            if (type === 'win') {
+                // Windows Terminal: outer bar darker, tab matches theme
+                e.titlebar.style.background = winBarColors[theme] || '#202020';
+                const tab = e.titlebar.querySelector('.win-tab');
+                if (tab) tab.style.background = titlebarColors[theme] || '#2d2d2d';
+            } else {
+                e.titlebar.style.background = titlebarColors[theme] || '#2d2d2d';
+            }
+        }
+
+        function applyFontSize(type) {
+            const e = els(type);
+            const size = e.fontSize.value + 'px';
+            e.input.style.fontSize = size;
+            e.screenshotText.style.fontSize = size;
+        }
+
+        function applyTitle(type) {
+            const e = els(type);
+            e.titleText.textContent = e.title.value;
+        }
+
+        function downloadScreenshot(type) {
+            const e = els(type);
+            e.screenshotText.textContent = e.input.value;
+            e.screenshotText.style.fontSize = e.input.style.fontSize || '14px';
+            e.input.style.display = 'none';
+            e.screenshotText.style.display = 'block';
+
+            html2canvas(e.container, {
+                backgroundColor: null,
+                scale: 2,
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
+                e.input.style.display = '';
+                e.screenshotText.style.display = 'none';
+                const osName = type === 'mac' ? 'macos' : 'windows';
+                const link = document.createElement('a');
+                link.download = 'terminal-' + osName + '.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast('Screenshot downloaded!');
+            }).catch(() => {
+                e.input.style.display = '';
+                e.screenshotText.style.display = 'none';
+                showToast('Error generating screenshot');
+            });
+        }
+
+        function copyToClipboard(type) {
+            const e = els(type);
+            e.screenshotText.textContent = e.input.value;
+            e.screenshotText.style.fontSize = e.input.style.fontSize || '14px';
+            e.input.style.display = 'none';
+            e.screenshotText.style.display = 'block';
+
+            html2canvas(e.container, {
+                backgroundColor: null,
+                scale: 2,
+                useCORS: true,
+                logging: false
+            }).then(canvas => {
+                e.input.style.display = '';
+                e.screenshotText.style.display = 'none';
+                canvas.toBlob(blob => {
+                    if (blob) {
+                        const item = new ClipboardItem({ 'image/png': blob });
+                        navigator.clipboard.write([item]).then(() => {
+                            showToast('Copied to clipboard!');
+                        }).catch(() => {
+                            showToast('Clipboard access denied');
+                        });
+                    }
+                });
+            }).catch(() => {
+                e.input.style.display = '';
+                e.screenshotText.style.display = 'none';
+            });
+        }
+
+        function clearTerminal(type) {
+            const e = els(type);
+            e.input.value = '';
+            e.input.focus();
+            showToast('Terminal cleared');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        // Tab key support in both textareas
+        document.querySelectorAll('.terminal-body textarea').forEach(textarea => {
+            textarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    textarea.value = textarea.value.substring(0, start) + '    ' + textarea.value.substring(end);
+                    textarea.selectionStart = textarea.selectionEnd = start + 4;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
